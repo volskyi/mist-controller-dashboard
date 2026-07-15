@@ -1,4 +1,4 @@
-const CACHE_NAME = "mist-shell-v1";
+const CACHE_NAME = "mist-shell-v2";
 const SHELL_FILES = [
   "./",
   "./index.html",

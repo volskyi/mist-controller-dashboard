@@ -122,7 +122,8 @@ function connect(username, password) {
 
   client.on("error", (err) => {
     setConnStatus("offline");
-    el("loginError").textContent = "Помилка підключення: перевір логін/пароль.";
+    const detail = (err && err.message) ? err.message : String(err);
+    el("loginError").textContent = "Помилка підключення: " + detail;
     console.error(err);
   });
 
