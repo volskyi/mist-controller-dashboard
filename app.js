@@ -122,8 +122,23 @@ function connect(username, password) {
 
   client.on("error", (err) => {
     setConnStatus("offline");
+    const extra = {};
+    if (err) {
+      Object.getOwnPropertyNames(err).forEach((k) => {
+        if (k !== "stack") extra[k] = err[k];
+      });
+    }
     const detail = (err && err.message) ? err.message : String(err);
-    el("loginError").textContent = "Помилка підключення: " + detail;
+    const box = el("loginError");
+    box.textContent = "";
+    box.append(
+      document.createTextNode("Помилка підключення: " + detail),
+      document.createElement("br")
+    );
+    const extraEl = document.createElement("span");
+    extraEl.style.cssText = "font-size:11px;opacity:0.8";
+    extraEl.textContent = JSON.stringify(extra);
+    box.append(extraEl);
     console.error(err);
   });
 
