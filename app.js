@@ -144,9 +144,17 @@ function logout() {
   setConnStatus("offline");
 }
 
+el("togglePass").addEventListener("click", () => {
+  const pass = el("pass");
+  const btn = el("togglePass");
+  const show = pass.type === "password";
+  pass.type = show ? "text" : "password";
+  btn.textContent = show ? "Сховати" : "Показати";
+});
+
 el("loginBtn").addEventListener("click", () => {
   const user = el("user").value.trim();
-  const pass = el("pass").value;
+  const pass = el("pass").value.trim();
   if (!user || !pass) {
     el("loginError").textContent = "Введи користувача і пароль.";
     return;

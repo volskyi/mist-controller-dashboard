@@ -86,6 +86,14 @@
     border: 1px solid var(--border); border-radius: 8px;
     background: var(--page-plane); color: var(--text-primary);
   }
+  .pass-row { display: flex; gap: 8px; }
+  .pass-row input { flex: 1; min-width: 0; }
+  .pass-row button {
+    flex: none; font-size: 13px; padding: 0 12px;
+    border: 1px solid var(--border); border-radius: 8px;
+    background: var(--page-plane); color: var(--text-secondary);
+    cursor: pointer;
+  }
   #login button {
     margin-top: 6px; font-size: 15px; font-weight: 600; padding: 12px;
     border: none; border-radius: 8px; background: var(--accent); color: #fff;
@@ -149,7 +157,10 @@
     </div>
     <div>
       <label for="pass">Пароль</label>
-      <input id="pass" type="password" autocomplete="current-password">
+      <div class="pass-row">
+        <input id="pass" type="password" autocomplete="current-password" autocapitalize="off" autocorrect="off" spellcheck="false">
+        <button type="button" id="togglePass">Показати</button>
+      </div>
     </div>
     <div id="loginError"></div>
     <button id="loginBtn">Підключитись</button>
