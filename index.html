@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#fcfcfb" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#1a1a19" media="(prefers-color-scheme: dark)">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Mist">
+<title>Mist Controller</title>
+<style>
+  :root {
+    --surface-1:      #fcfcfb;
+    --page-plane:     #f9f9f7;
+    --text-primary:   #0b0b0b;
+    --text-secondary: #52514e;
+    --muted:          #898781;
+    --gridline:       #e1e0d9;
+    --border:         rgba(11,11,11,0.10);
+    --accent:         #2a78d6;
+    --accent-wash:    #cde2fb;
+    --good:           #0ca30c;
+    --warning:        #fab219;
+    --serious:        #ec835a;
+    --critical:       #d03b3b;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --surface-1:      #1a1a19;
+      --page-plane:     #0d0d0d;
+      --text-primary:   #ffffff;
+      --text-secondary: #c3c2b7;
+      --muted:          #898781;
+      --gridline:       #2c2c2a;
+      --border:         rgba(255,255,255,0.10);
+      --accent:         #3987e5;
+      --accent-wash:    #184f95;
+      --good:           #0ca30c;
+      --warning:        #fab219;
+      --serious:        #ec835a;
+      --critical:       #d03b3b;
+    }
+  }
+
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0; min-height: 100%;
+    background: var(--page-plane);
+    color: var(--text-primary);
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  body {
+    padding: max(20px, env(safe-area-inset-top)) 16px max(20px, env(safe-area-inset-bottom));
+  }
+
+  .app { max-width: 480px; margin: 0 auto; }
+
+  header.top {
+    display: flex; align-items: baseline; justify-content: space-between;
+    margin-bottom: 20px;
+  }
+  header.top h1 { font-size: 20px; font-weight: 600; margin: 0; }
+  header.top .status {
+    font-size: 13px; color: var(--text-secondary);
+    display: flex; align-items: center; gap: 6px;
+  }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); flex: none; }
+  .dot.on { background: var(--good); }
+  .dot.off { background: var(--critical); }
+
+  /* --- Login --- */
+  #login {
+    display: flex; flex-direction: column; gap: 14px;
+    background: var(--surface-1); border: 1px solid var(--border);
+    border-radius: 14px; padding: 24px; margin-top: 40px;
+  }
+  #login h2 { margin: 0 0 4px; font-size: 17px; }
+  #login p { margin: 0 0 8px; font-size: 13px; color: var(--text-secondary); }
+  #login label { font-size: 13px; color: var(--text-secondary); display: block; margin-bottom: 4px; }
+  #login input {
+    width: 100%; font-size: 16px; padding: 10px 12px;
+    border: 1px solid var(--border); border-radius: 8px;
+    background: var(--page-plane); color: var(--text-primary);
+  }
+  #login button {
+    margin-top: 6px; font-size: 15px; font-weight: 600; padding: 12px;
+    border: none; border-radius: 8px; background: var(--accent); color: #fff;
+    cursor: pointer;
+  }
+  #login button:active { opacity: 0.85; }
+  #loginError { color: var(--critical); font-size: 13px; min-height: 16px; }
+
+  /* --- KPI row --- */
+  #dashboard { display: none; flex-direction: column; gap: 12px; }
+  .kpi-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+  .tile {
+    background: var(--surface-1); border: 1px solid var(--border);
+    border-radius: 14px; padding: 16px;
+    display: flex; flex-direction: column; gap: 6px;
+  }
+  .tile.wide { grid-column: 1 / -1; }
+  .tile .label { font-size: 13px; color: var(--text-secondary); }
+  .tile .value-row { display: flex; align-items: baseline; gap: 4px; }
+  .tile .value { font-size: 34px; font-weight: 600; line-height: 1.1; font-variant-numeric: proportional-nums; }
+  .tile .unit { font-size: 15px; color: var(--text-secondary); }
+  .tile .badge {
+    align-self: flex-start; font-size: 12px; font-weight: 600;
+    padding: 3px 8px; border-radius: 999px; margin-top: 2px;
+    display: flex; align-items: center; gap: 4px;
+  }
+  .badge.good { color: var(--good); background: color-mix(in srgb, var(--good) 14%, transparent); }
+  .badge.warning { color: #9c6a00; background: color-mix(in srgb, var(--warning) 22%, transparent); }
+  .badge.serious { color: var(--serious); background: color-mix(in srgb, var(--serious) 16%, transparent); }
+  .badge.critical { color: var(--critical); background: color-mix(in srgb, var(--critical) 14%, transparent); }
+  @media (prefers-color-scheme: dark) {
+    .badge.warning { color: var(--warning); }
+  }
+
+  .spark { width: 100%; height: 32px; margin-top: 4px; display: block; }
+  .spark polyline { fill: none; stroke: var(--accent); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+  .updated { font-size: 12px; color: var(--muted); text-align: center; margin-top: 4px; }
+
+  #logout {
+    margin-top: 4px; font-size: 13px; color: var(--text-secondary);
+    background: none; border: none; text-decoration: underline;
+    padding: 8px; cursor: pointer; align-self: center;
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <h1>Mist Controller</h1>
+    <div class="status"><span class="dot" id="connDot"></span><span id="connText">офлайн</span></div>
+  </header>
+
+  <div id="login">
+    <h2>Вхід</h2>
+    <p>Дані від MQTT-брокера (HiveMQ Cloud). Зберігаються лише в цьому браузері.</p>
+    <div>
+      <label for="user">Користувач</label>
+      <input id="user" type="text" autocomplete="username" autocapitalize="off" autocorrect="off">
+    </div>
+    <div>
+      <label for="pass">Пароль</label>
+      <input id="pass" type="password" autocomplete="current-password">
+    </div>
+    <div id="loginError"></div>
+    <button id="loginBtn">Підключитись</button>
+  </div>
+
+  <div id="dashboard">
+    <div class="kpi-row">
+      <div class="tile">
+        <div class="label">Температура</div>
+        <div class="value-row"><span class="value" id="tempValue">—</span><span class="unit">°C</span></div>
+        <svg class="spark" viewBox="0 0 100 32" preserveAspectRatio="none"><polyline id="tempSpark" points=""></polyline></svg>
+      </div>
+      <div class="tile">
+        <div class="label">Вологість</div>
+        <div class="value-row"><span class="value" id="humValue">—</span><span class="unit">%</span></div>
+        <svg class="spark" viewBox="0 0 100 32" preserveAspectRatio="none"><polyline id="humSpark" points=""></polyline></svg>
+      </div>
+      <div class="tile wide">
+        <div class="label">Сигнал WiFi (RSSI)</div>
+        <div class="value-row"><span class="value" id="rssiValue">—</span><span class="unit">dBm</span></div>
+        <div class="badge" id="rssiBadge"></div>
+      </div>
+    </div>
+    <div class="updated" id="updatedAt"></div>
+    <button id="logout">Вийти</button>
+  </div>
+</div>
+
+<script src="mqtt.min.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
