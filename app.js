@@ -8,6 +8,7 @@ const TOPICS = {
   temperature: "home/mist/temperature",
   humidity: "home/mist/humidity",
   rssi: "home/mist/rssi",
+  status: "home/mist/status",
 };
 
 const SPARK_MAX_POINTS = 20;
@@ -73,7 +74,30 @@ function touchUpdatedAt() {
     "Оновлено " + now.toLocaleTimeString("uk-UA", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
 }
 
+function setDeviceStatus(status) {
+  // status: "online" | "offline" | "unknown"
+  const box = el("deviceStatus");
+  const dot = el("deviceDot");
+  const text = el("deviceStatusText");
+  box.className = "device-status " + status;
+  dot.classList.remove("on", "off");
+  if (status === "online") {
+    dot.classList.add("on");
+    text.textContent = "Контролер: онлайн";
+  } else if (status === "offline") {
+    dot.classList.add("off");
+    text.textContent = "Контролер: офлайн";
+  } else {
+    text.textContent = "Контролер: невідомо";
+  }
+}
+
 function handleMessage(topic, payload) {
+  if (topic === TOPICS.status) {
+    setDeviceStatus(payload.toString().trim());
+    return;
+  }
+
   const value = parseFloat(payload.toString());
   if (Number.isNaN(value)) return;
 
