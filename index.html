@@ -147,8 +147,20 @@
     .badge.warning { color: var(--warning); }
   }
 
-  .spark { width: 100%; height: 32px; margin-top: 4px; display: block; }
+  .spark-wrap { position: relative; margin-top: 4px; touch-action: pan-y; }
+  .spark { width: 100%; height: 32px; display: block; cursor: crosshair; }
   .spark polyline { fill: none; stroke: var(--accent); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .spark-crosshair { stroke: var(--muted); stroke-width: 1; vector-effect: non-scaling-stroke; }
+  .spark-dot { fill: var(--accent); stroke: var(--surface-1); stroke-width: 1.5; vector-effect: non-scaling-stroke; }
+  .spark-tooltip {
+    position: absolute; top: -4px; right: 0;
+    font-size: 11px; padding: 2px 6px; border-radius: 6px;
+    background: var(--surface-1); border: 1px solid var(--border);
+    pointer-events: none; opacity: 0; transition: opacity 0.1s; white-space: nowrap;
+  }
+  .spark-tooltip.visible { opacity: 1; }
+  .spark-tooltip .val { color: var(--text-primary); font-weight: 600; }
+  .spark-tooltip .lbl { color: var(--text-secondary); margin-left: 4px; }
 
   .updated { font-size: 12px; color: var(--muted); text-align: center; margin-top: 4px; }
 
@@ -243,7 +255,14 @@
           </div>
         </div>
         <div class="spark-label">Last 60min</div>
-        <svg class="spark" viewBox="0 0 100 32" preserveAspectRatio="none"><polyline id="tempSpark" points=""></polyline></svg>
+        <div class="spark-wrap" id="tempSparkWrap">
+          <svg class="spark" viewBox="0 0 100 32" preserveAspectRatio="none">
+            <line class="spark-crosshair" id="tempCrosshair" x1="0" y1="0" x2="0" y2="32" opacity="0"></line>
+            <polyline id="tempSpark" points=""></polyline>
+            <circle class="spark-dot" id="tempDot" r="2.5" opacity="0"></circle>
+          </svg>
+          <div class="spark-tooltip" id="tempTooltip"></div>
+        </div>
       </div>
       <div class="tile wide">
         <div class="metric-head">
@@ -257,7 +276,14 @@
           </div>
         </div>
         <div class="spark-label">Last 60min</div>
-        <svg class="spark" viewBox="0 0 100 32" preserveAspectRatio="none"><polyline id="humSpark" points=""></polyline></svg>
+        <div class="spark-wrap" id="humSparkWrap">
+          <svg class="spark" viewBox="0 0 100 32" preserveAspectRatio="none">
+            <line class="spark-crosshair" id="humCrosshair" x1="0" y1="0" x2="0" y2="32" opacity="0"></line>
+            <polyline id="humSpark" points=""></polyline>
+            <circle class="spark-dot" id="humDot" r="2.5" opacity="0"></circle>
+          </svg>
+          <div class="spark-tooltip" id="humTooltip"></div>
+        </div>
       </div>
       <div class="tile wide">
         <div class="label">Сигнал WiFi (RSSI)</div>

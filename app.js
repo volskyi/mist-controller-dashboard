@@ -32,6 +32,7 @@ const SET_TOPICS = {
 
 // Історія (60 точок по 1/хв) тепер рахується на самому контролері й приходить
 // готовим retained JSON-масивом — дашборду лишається тільки намалювати.
+const sparkData = { temperature: [], humidity: [] };
 
 let client = null;
 
@@ -59,33 +60,106 @@ function rssiStatus(rssi) {
   return { cls: "critical", label: "Дуже слабкий" };
 }
 
+function sparkScale(values) {
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  return { min, max, range: max - min || 1 };
+}
+
+function sparkPointXY(values, index, scale) {
+  const x = (index / (values.length - 1)) * 100;
+  const y = 30 - ((values[index] - scale.min) / scale.range) * 28;
+  return { x, y };
+}
+
 function renderSpark(svgId, values) {
   const svg = el(svgId);
   if (values.length < 2) {
     svg.setAttribute("points", "");
     return;
   }
-  const min = Math.min(...values);
-  const max = Math.max(...values);
-  const range = max - min || 1;
+  const scale = sparkScale(values);
   const points = values
     .map((v, i) => {
-      const x = (i / (values.length - 1)) * 100;
-      const y = 30 - ((v - min) / range) * 28;
+      const { x, y } = sparkPointXY(values, i, scale);
       return `${x.toFixed(1)},${y.toFixed(1)}`;
     })
     .join(" ");
   svg.setAttribute("points", points);
 }
 
-function renderSparkFromJSON(svgId, jsonText) {
+function renderSparkFromJSON(svgId, jsonText, key) {
   let values = [];
   try {
     values = JSON.parse(jsonText);
   } catch (e) {
     return;
   }
+  sparkData[key] = values;
   renderSpark(svgId, values);
+}
+
+function setupSparkHover(wrapId, svgLineId, crosshairId, dotId, tooltipId, key, unit) {
+  const wrap = el(wrapId);
+  const svgEl = wrap.querySelector("svg");
+  const crosshair = el(crosshairId);
+  const dot = el(dotId);
+  const tooltip = el(tooltipId);
+
+  function show(clientX) {
+    const values = sparkData[key];
+    if (!values || values.length < 2) return;
+
+    const rect = svgEl.getBoundingClientRect();
+    const relX = Math.min(Math.max((clientX - rect.left) / rect.width, 0), 1) * 100;
+
+    let nearest = 0;
+    let nearestDist = Infinity;
+    for (let i = 0; i < values.length; i++) {
+      const x = (i / (values.length - 1)) * 100;
+      const dist = Math.abs(x - relX);
+      if (dist < nearestDist) {
+        nearestDist = dist;
+        nearest = i;
+      }
+    }
+
+    const scale = sparkScale(values);
+    const { x, y } = sparkPointXY(values, nearest, scale);
+
+    crosshair.setAttribute("x1", x);
+    crosshair.setAttribute("x2", x);
+    crosshair.setAttribute("opacity", "1");
+    dot.setAttribute("cx", x);
+    dot.setAttribute("cy", y);
+    dot.setAttribute("opacity", "1");
+
+    const minutesAgo = values.length - 1 - nearest;
+    const valSpan = document.createElement("span");
+    valSpan.className = "val";
+    valSpan.textContent = values[nearest].toFixed(1) + unit;
+    const lblSpan = document.createElement("span");
+    lblSpan.className = "lbl";
+    lblSpan.textContent = minutesAgo === 0 ? "зараз" : minutesAgo + " хв тому";
+    tooltip.replaceChildren(valSpan, lblSpan);
+    tooltip.classList.add("visible");
+  }
+
+  function hide() {
+    crosshair.setAttribute("opacity", "0");
+    dot.setAttribute("opacity", "0");
+    tooltip.classList.remove("visible");
+  }
+
+  svgEl.addEventListener("pointerdown", (e) => {
+    svgEl.setPointerCapture(e.pointerId);
+    show(e.clientX);
+  });
+  svgEl.addEventListener("pointermove", (e) => {
+    if (e.buttons || e.pointerType !== "touch") show(e.clientX);
+  });
+  svgEl.addEventListener("pointerup", hide);
+  svgEl.addEventListener("pointerleave", hide);
 }
 
 function touchUpdatedAt() {
@@ -158,7 +232,7 @@ function handleMessage(topic, payload) {
     if (Number.isNaN(value)) return;
     el("tempValue").textContent = value.toFixed(1);
   } else if (topic === TOPICS.temperatureHistory) {
-    renderSparkFromJSON("tempSpark", text);
+    renderSparkFromJSON("tempSpark", text, "temperature");
   } else if (topic === TOPICS.temperatureHigh) {
     const value = parseFloat(text);
     if (!Number.isNaN(value)) el("tempHigh").textContent = value.toFixed(1) + "°C";
@@ -170,7 +244,7 @@ function handleMessage(topic, payload) {
     if (Number.isNaN(value)) return;
     el("humValue").textContent = value.toFixed(1);
   } else if (topic === TOPICS.humidityHistory) {
-    renderSparkFromJSON("humSpark", text);
+    renderSparkFromJSON("humSpark", text, "humidity");
   } else if (topic === TOPICS.humidityHigh) {
     const value = parseFloat(text);
     if (!Number.isNaN(value)) el("humHigh").textContent = value.toFixed(1) + "%";
@@ -291,6 +365,9 @@ function wireModeButtons(containerId, setTopic) {
 
 wireModeButtons("mistModeButtons", SET_TOPICS.mistSet);
 wireModeButtons("ledModeButtons", SET_TOPICS.ledSet);
+
+setupSparkHover("tempSparkWrap", "tempSpark", "tempCrosshair", "tempDot", "tempTooltip", "temperature", "°C");
+setupSparkHover("humSparkWrap", "humSpark", "humCrosshair", "humDot", "humTooltip", "humidity", "%");
 
 el("targetHumiditySave").addEventListener("click", () => {
   if (!client || !client.connected) return;
