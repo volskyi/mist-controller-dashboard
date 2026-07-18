@@ -11,8 +11,10 @@ const TOPICS = {
   status: "home/mist/status",
   temperatureHigh: "home/mist/temperature/high",
   temperatureLow: "home/mist/temperature/low",
+  temperatureHistory: "home/mist/temperature/history",
   humidityHigh: "home/mist/humidity/high",
   humidityLow: "home/mist/humidity/low",
+  humidityHistory: "home/mist/humidity/history",
   mistState: "home/mist/relay/state",
   mistMode: "home/mist/relay/mode",
   targetHumidity: "home/mist/target_humidity",
@@ -28,17 +30,8 @@ const SET_TOPICS = {
   ledScheduleSet: "home/mist/led/schedule/set",
 };
 
-// 60 точок по 1/хв = рівно останні 60 хвилин на графіку
-const SPARK_MAX_POINTS = 60;
-const SPARK_INTERVAL_MS = 60000;
-const series = {
-  temperature: [],
-  humidity: [],
-};
-const lastSparkPush = {
-  temperature: 0,
-  humidity: 0,
-};
+// Історія (60 точок по 1/хв) тепер рахується на самому контролері й приходить
+// готовим retained JSON-масивом — дашборду лишається тільки намалювати.
 
 let client = null;
 
@@ -85,16 +78,14 @@ function renderSpark(svgId, values) {
   svg.setAttribute("points", points);
 }
 
-function pushSeries(key, value) {
-  const now = Date.now();
-  // прошивка публікує раз на 30с, а спарклайну треба 1 точка/хв — децимуємо тут,
-  // щоб 60 точок на шкалі відповідали рівно останній годині, а не останнім 30хв
-  if (now - lastSparkPush[key] < SPARK_INTERVAL_MS) return;
-  lastSparkPush[key] = now;
-
-  const arr = series[key];
-  arr.push(value);
-  if (arr.length > SPARK_MAX_POINTS) arr.shift();
+function renderSparkFromJSON(svgId, jsonText) {
+  let values = [];
+  try {
+    values = JSON.parse(jsonText);
+  } catch (e) {
+    return;
+  }
+  renderSpark(svgId, values);
 }
 
 function touchUpdatedAt() {
@@ -166,8 +157,8 @@ function handleMessage(topic, payload) {
     const value = parseFloat(text);
     if (Number.isNaN(value)) return;
     el("tempValue").textContent = value.toFixed(1);
-    pushSeries("temperature", value);
-    renderSpark("tempSpark", series.temperature);
+  } else if (topic === TOPICS.temperatureHistory) {
+    renderSparkFromJSON("tempSpark", text);
   } else if (topic === TOPICS.temperatureHigh) {
     const value = parseFloat(text);
     if (!Number.isNaN(value)) el("tempHigh").textContent = value.toFixed(1) + "°C";
@@ -178,8 +169,8 @@ function handleMessage(topic, payload) {
     const value = parseFloat(text);
     if (Number.isNaN(value)) return;
     el("humValue").textContent = value.toFixed(1);
-    pushSeries("humidity", value);
-    renderSpark("humSpark", series.humidity);
+  } else if (topic === TOPICS.humidityHistory) {
+    renderSparkFromJSON("humSpark", text);
   } else if (topic === TOPICS.humidityHigh) {
     const value = parseFloat(text);
     if (!Number.isNaN(value)) el("humHigh").textContent = value.toFixed(1) + "%";
