@@ -117,6 +117,13 @@
   #dashboard { display: none; flex-direction: column; gap: 12px; }
   .kpi-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 
+  .metric-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+  .minmax { display: flex; flex-direction: column; gap: 4px; text-align: right; }
+  .minmax-item { display: flex; gap: 6px; justify-content: flex-end; font-size: 12px; }
+  .minmax-label { color: var(--text-secondary); }
+  .minmax-value { color: var(--text-primary); font-weight: 600; font-variant-numeric: tabular-nums; }
+  .spark-label { font-size: 11px; color: var(--muted); margin-top: 8px; }
+
   .tile {
     background: var(--surface-1); border: 1px solid var(--border);
     border-radius: 14px; padding: 16px;
@@ -161,11 +168,19 @@
   .segmented button.active { background: var(--accent); color: #fff; }
 
   .target-row { display: flex; gap: 8px; align-items: center; }
-  .target-row input {
-    flex: 1; font-size: 16px; padding: 8px 10px;
+  .target-input-wrap {
+    flex: 1; display: flex; align-items: center; min-width: 0;
     border: 1px solid var(--border); border-radius: 8px;
-    background: var(--page-plane); color: var(--text-primary);
+    background: var(--page-plane); padding-right: 10px;
   }
+  .target-input-wrap input {
+    flex: 1; min-width: 0; border: none; background: transparent;
+    font-size: 16px; padding: 8px 0 8px 10px; color: var(--text-primary);
+  }
+  .target-input-wrap input:focus { outline: none; }
+  .target-input-wrap input::-webkit-outer-spin-button,
+  .target-input-wrap input::-webkit-inner-spin-button { margin-left: 4px; }
+  .target-suffix { font-size: 13px; color: var(--text-secondary); white-space: nowrap; }
   .target-row button, .schedule-save {
     font-size: 13px; font-weight: 600; padding: 8px 14px;
     border: none; border-radius: 8px; background: var(--accent); color: #fff; cursor: pointer;
@@ -216,14 +231,32 @@
       <span id="deviceStatusText">Контролер: —</span>
     </div>
     <div class="kpi-row">
-      <div class="tile">
-        <div class="label">Температура</div>
-        <div class="value-row"><span class="value" id="tempValue">—</span><span class="unit">°C</span></div>
+      <div class="tile wide">
+        <div class="metric-head">
+          <div>
+            <div class="label">Температура</div>
+            <div class="value-row"><span class="value" id="tempValue">—</span><span class="unit">°C</span></div>
+          </div>
+          <div class="minmax">
+            <div class="minmax-item"><span class="minmax-label">Highest 24h</span><span class="minmax-value" id="tempHigh">—</span></div>
+            <div class="minmax-item"><span class="minmax-label">Lowest 24h</span><span class="minmax-value" id="tempLow">—</span></div>
+          </div>
+        </div>
+        <div class="spark-label">Last 60min</div>
         <svg class="spark" viewBox="0 0 100 32" preserveAspectRatio="none"><polyline id="tempSpark" points=""></polyline></svg>
       </div>
-      <div class="tile">
-        <div class="label">Вологість</div>
-        <div class="value-row"><span class="value" id="humValue">—</span><span class="unit">%</span></div>
+      <div class="tile wide">
+        <div class="metric-head">
+          <div>
+            <div class="label">Вологість</div>
+            <div class="value-row"><span class="value" id="humValue">—</span><span class="unit">%</span></div>
+          </div>
+          <div class="minmax">
+            <div class="minmax-item"><span class="minmax-label">Highest 24h</span><span class="minmax-value" id="humHigh">—</span></div>
+            <div class="minmax-item"><span class="minmax-label">Lowest 24h</span><span class="minmax-value" id="humLow">—</span></div>
+          </div>
+        </div>
+        <div class="spark-label">Last 60min</div>
         <svg class="spark" viewBox="0 0 100 32" preserveAspectRatio="none"><polyline id="humSpark" points=""></polyline></svg>
       </div>
       <div class="tile wide">
@@ -240,13 +273,16 @@
         <button data-mode="off">Вимк</button>
       </div>
       <div class="target-row">
-        <input id="targetHumidityInput" type="number" min="0" max="100" step="0.5" placeholder="Ціль вологості, %">
+        <div class="target-input-wrap">
+          <input id="targetHumidityInput" type="number" min="0" max="100" step="0.5" placeholder="Ціль">
+          <span class="target-suffix">% вологості</span>
+        </div>
         <button id="targetHumiditySave">Зберегти</button>
       </div>
     </div>
 
     <div class="tile control-tile">
-      <div class="row-title"><h3>LED-стрічка</h3><span class="state-line">зараз: <b id="ledStateText">—</b></span></div>
+      <div class="row-title"><h3>Світло</h3><span class="state-line">зараз: <b id="ledStateText">—</b></span></div>
       <div class="segmented" id="ledModeButtons">
         <button data-mode="auto">Авто</button>
         <button data-mode="on">Увімк</button>
