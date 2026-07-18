@@ -9,6 +9,19 @@ const TOPICS = {
   humidity: "home/mist/humidity",
   rssi: "home/mist/rssi",
   status: "home/mist/status",
+  mistState: "home/mist/relay/state",
+  mistMode: "home/mist/relay/mode",
+  targetHumidity: "home/mist/target_humidity",
+  ledState: "home/mist/led/state",
+  ledMode: "home/mist/led/mode",
+  ledSchedule: "home/mist/led/schedule",
+};
+
+const SET_TOPICS = {
+  mistSet: "home/mist/relay/set",
+  targetHumiditySet: "home/mist/target_humidity/set",
+  ledSet: "home/mist/led/set",
+  ledScheduleSet: "home/mist/led/schedule/set",
 };
 
 const SPARK_MAX_POINTS = 20;
@@ -92,30 +105,71 @@ function setDeviceStatus(status) {
   }
 }
 
-function handleMessage(topic, payload) {
-  if (topic === TOPICS.status) {
-    setDeviceStatus(payload.toString().trim());
+function setActiveMode(containerId, mode) {
+  el(containerId)
+    .querySelectorAll("button")
+    .forEach((btn) => btn.classList.toggle("active", btn.dataset.mode === mode));
+}
+
+function renderSchedule(jsonText) {
+  let periods = [];
+  try {
+    periods = JSON.parse(jsonText);
+  } catch (e) {
     return;
   }
+  for (let i = 0; i < 4; i++) {
+    const p = periods[i];
+    el(`sched${i}Start`).value = p ? p.start : "";
+    el(`sched${i}End`).value = p ? p.end : "";
+    el(`sched${i}State`).value = p ? p.state : "on";
+  }
+}
 
-  const value = parseFloat(payload.toString());
-  if (Number.isNaN(value)) return;
+function handleMessage(topic, payload) {
+  const text = payload.toString().trim();
 
-  if (topic === TOPICS.temperature) {
+  if (topic === TOPICS.status) {
+    setDeviceStatus(text);
+  } else if (topic === TOPICS.mistState) {
+    el("mistStateText").textContent = text === "on" ? "увімкнено" : "вимкнено";
+  } else if (topic === TOPICS.mistMode) {
+    setActiveMode("mistModeButtons", text);
+  } else if (topic === TOPICS.ledState) {
+    el("ledStateText").textContent = text === "on" ? "увімкнено" : "вимкнено";
+  } else if (topic === TOPICS.ledMode) {
+    setActiveMode("ledModeButtons", text);
+  } else if (topic === TOPICS.ledSchedule) {
+    renderSchedule(text);
+  } else if (topic === TOPICS.targetHumidity) {
+    const value = parseFloat(text);
+    if (!Number.isNaN(value) && document.activeElement !== el("targetHumidityInput")) {
+      el("targetHumidityInput").value = value;
+    }
+  } else if (topic === TOPICS.temperature) {
+    const value = parseFloat(text);
+    if (Number.isNaN(value)) return;
     el("tempValue").textContent = value.toFixed(1);
     pushSeries("temperature", value);
     renderSpark("tempSpark", series.temperature);
   } else if (topic === TOPICS.humidity) {
+    const value = parseFloat(text);
+    if (Number.isNaN(value)) return;
     el("humValue").textContent = value.toFixed(1);
     pushSeries("humidity", value);
     renderSpark("humSpark", series.humidity);
   } else if (topic === TOPICS.rssi) {
+    const value = parseFloat(text);
+    if (Number.isNaN(value)) return;
     el("rssiValue").textContent = value.toFixed(0);
     const status = rssiStatus(value);
     const badge = el("rssiBadge");
     badge.textContent = status.label;
     badge.className = "badge " + status.cls;
+  } else {
+    return;
   }
+
   touchUpdatedAt();
 }
 
@@ -204,6 +258,39 @@ el("loginBtn").addEventListener("click", () => {
 });
 
 el("logout").addEventListener("click", logout);
+
+function wireModeButtons(containerId, setTopic) {
+  el(containerId)
+    .querySelectorAll("button")
+    .forEach((btn) => {
+      btn.addEventListener("click", () => {
+        if (!client || !client.connected) return;
+        client.publish(setTopic, btn.dataset.mode);
+      });
+    });
+}
+
+wireModeButtons("mistModeButtons", SET_TOPICS.mistSet);
+wireModeButtons("ledModeButtons", SET_TOPICS.ledSet);
+
+el("targetHumiditySave").addEventListener("click", () => {
+  if (!client || !client.connected) return;
+  const value = el("targetHumidityInput").value;
+  if (!value) return;
+  client.publish(SET_TOPICS.targetHumiditySet, value);
+});
+
+el("scheduleSave").addEventListener("click", () => {
+  if (!client || !client.connected) return;
+  const periods = [];
+  for (let i = 0; i < 4; i++) {
+    const start = el(`sched${i}Start`).value;
+    const end = el(`sched${i}End`).value;
+    const state = el(`sched${i}State`).value;
+    if (start && end) periods.push({ start, end, state });
+  }
+  client.publish(SET_TOPICS.ledScheduleSet, JSON.stringify(periods));
+});
 
 // Автовхід, якщо дані вже збережені в цьому браузері
 const savedUser = localStorage.getItem("mist_user");

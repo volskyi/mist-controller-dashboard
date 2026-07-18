@@ -145,6 +145,39 @@
 
   .updated { font-size: 12px; color: var(--muted); text-align: center; margin-top: 4px; }
 
+  /* --- Керування --- */
+  .control-tile { gap: 12px; }
+  .control-tile .row-title { display: flex; align-items: center; justify-content: space-between; }
+  .control-tile h3 { margin: 0; font-size: 15px; font-weight: 600; }
+  .state-line { font-size: 13px; color: var(--text-secondary); }
+  .state-line b { color: var(--text-primary); }
+
+  .segmented { display: flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  .segmented button {
+    flex: 1; padding: 8px 0; font-size: 13px; font-weight: 600;
+    border: none; background: var(--page-plane); color: var(--text-secondary); cursor: pointer;
+  }
+  .segmented button:not(:last-child) { border-right: 1px solid var(--border); }
+  .segmented button.active { background: var(--accent); color: #fff; }
+
+  .target-row { display: flex; gap: 8px; align-items: center; }
+  .target-row input {
+    flex: 1; font-size: 16px; padding: 8px 10px;
+    border: 1px solid var(--border); border-radius: 8px;
+    background: var(--page-plane); color: var(--text-primary);
+  }
+  .target-row button, .schedule-save {
+    font-size: 13px; font-weight: 600; padding: 8px 14px;
+    border: none; border-radius: 8px; background: var(--accent); color: #fff; cursor: pointer;
+  }
+
+  .schedule-row { display: grid; grid-template-columns: 1fr 1fr auto; gap: 8px; align-items: center; }
+  .schedule-row input[type="time"], .schedule-row select {
+    font-size: 14px; padding: 7px 8px; border: 1px solid var(--border); border-radius: 8px;
+    background: var(--page-plane); color: var(--text-primary);
+  }
+  #scheduleRows { display: flex; flex-direction: column; gap: 8px; }
+
   #logout {
     margin-top: 4px; font-size: 13px; color: var(--text-secondary);
     background: none; border: none; text-decoration: underline;
@@ -199,6 +232,47 @@
         <div class="badge" id="rssiBadge"></div>
       </div>
     </div>
+    <div class="tile control-tile">
+      <div class="row-title"><h3>Пароутворювач</h3><span class="state-line">зараз: <b id="mistStateText">—</b></span></div>
+      <div class="segmented" id="mistModeButtons">
+        <button data-mode="auto">Авто</button>
+        <button data-mode="on">Увімк</button>
+        <button data-mode="off">Вимк</button>
+      </div>
+      <div class="target-row">
+        <input id="targetHumidityInput" type="number" min="0" max="100" step="0.5" placeholder="Ціль вологості, %">
+        <button id="targetHumiditySave">Зберегти</button>
+      </div>
+    </div>
+
+    <div class="tile control-tile">
+      <div class="row-title"><h3>LED-стрічка</h3><span class="state-line">зараз: <b id="ledStateText">—</b></span></div>
+      <div class="segmented" id="ledModeButtons">
+        <button data-mode="auto">Авто</button>
+        <button data-mode="on">Увімк</button>
+        <button data-mode="off">Вимк</button>
+      </div>
+      <div id="scheduleRows">
+        <div class="schedule-row">
+          <input type="time" id="sched0Start"><input type="time" id="sched0End">
+          <select id="sched0State"><option value="on">Увімк</option><option value="off">Вимк</option></select>
+        </div>
+        <div class="schedule-row">
+          <input type="time" id="sched1Start"><input type="time" id="sched1End">
+          <select id="sched1State"><option value="on">Увімк</option><option value="off">Вимк</option></select>
+        </div>
+        <div class="schedule-row">
+          <input type="time" id="sched2Start"><input type="time" id="sched2End">
+          <select id="sched2State"><option value="on">Увімк</option><option value="off">Вимк</option></select>
+        </div>
+        <div class="schedule-row">
+          <input type="time" id="sched3Start"><input type="time" id="sched3End">
+          <select id="sched3State"><option value="on">Увімк</option><option value="off">Вимк</option></select>
+        </div>
+      </div>
+      <button class="schedule-save" id="scheduleSave">Зберегти розклад</button>
+    </div>
+
     <div class="updated" id="updatedAt"></div>
     <button id="logout">Вийти</button>
   </div>
